@@ -63,7 +63,7 @@ func TestPoint_Trans(t *testing.T) {
 	}
 
 	for _, item := range tests {
-		point, _ := item.point.Trans(10, 10)
+		point, _ := item.point.Trans()
 		assert.Equal(t, item.wantPoint, point, "they should be equal")
 	}
 }

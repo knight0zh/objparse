@@ -10,6 +10,9 @@ import (
 const (
 	xIndex int = 0
 	yIndex int = 2
+
+	xMax float64 = 10
+	yMax float64 = 10
 )
 
 type Point struct {
@@ -51,7 +54,7 @@ func LoadPoint(coordinates ...string) (*Point, error) {
 	}, nil
 }
 
-func (p *Point) Trans(xMax, yMax float64) (*Point, error) {
+func (p *Point) Trans() (*Point, error) {
 	xHalfLen := xMax / 2
 	yHalfLen := yMax / 2
 

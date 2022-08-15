@@ -6,9 +6,14 @@ import (
 )
 
 func TestParseObj(t *testing.T) {
-	parse, err := LoadObjFile("./testdata/maze.obj", 10, 10)
+	parse, err := LoadObjFile("./testdata/maze.obj", 100, 100)
 	assert.Nil(t, err)
 
-	world := parse.RenderWorld(100, 100)
+	_ = parse.InitWorld()
+
+	parse.SetStart(6, 6)
+	parse.SetEnd(5, 50)
+
+	world := parse.Render()
 	t.Logf("Output world\n%s", world)
 }

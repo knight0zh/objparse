@@ -11,6 +11,11 @@ import (
 const (
 	Vertex = "v"
 	Face   = "f"
+
+	Blank uint8 = 0
+	Block uint8 = 1
+	Start uint8 = 8
+	End   uint8 = 9
 )
 
 var (
@@ -19,10 +24,12 @@ var (
 )
 
 type ObjParse struct {
-	Triangles []*Triangle
+	xLen, yLen int
+	pix        []uint8
+	Triangles  []*Triangle
 }
 
-func LoadObjFile(filename string, xMax, yMax float64) (p *ObjParse, err error) {
+func LoadObjFile(filename string, xLen, yLen int) (p *ObjParse, err error) {
 	buf, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -34,6 +41,9 @@ func LoadObjFile(filename string, xMax, yMax float64) (p *ObjParse, err error) {
 	)
 
 	p = &ObjParse{
+		xLen:      xLen,
+		yLen:      yLen,
+		pix:       make([]uint8, 0),
 		Triangles: make([]*Triangle, 0),
 	}
 
@@ -59,7 +69,7 @@ func LoadObjFile(filename string, xMax, yMax float64) (p *ObjParse, err error) {
 				err = fmt.Errorf("%s:%d: invalid float: %w\n", filename, n+1, err)
 				break
 			}
-			_point, err := point.Trans(xMax, yMax)
+			_point, err := point.Trans()
 			if err != nil {
 				err = fmt.Errorf("%s:%d: invalid trans: %w\n", filename, n+1, err)
 				break
@@ -96,9 +106,71 @@ func LoadObjFile(filename string, xMax, yMax float64) (p *ObjParse, err error) {
 	return p, err
 }
 
-func (p *ObjParse) RenderWorld(xLen, zLen int) (s string) {
-	for y := 0; y < zLen; y++ {
-		for x := 0; x < xLen; x++ {
+func (p *ObjParse) InitWorld() error {
+	for y := 0; y < p.yLen; y++ {
+		for x := 0; x < p.xLen; x++ {
+			isBlock := true
+			for _, triangle := range p.Triangles {
+				if triangle.IsInside(Point{
+					X: float64(x) / 10,
+					Y: float64(y) / 10,
+				}) {
+					isBlock = false
+					break
+				}
+			}
+			if isBlock {
+				p.pix = append(p.pix, Block)
+			} else {
+				p.pix = append(p.pix, Blank)
+
+			}
+		}
+	}
+	return nil
+}
+
+func (p *ObjParse) pixOffset(x, y int) int {
+	return y*p.xLen + x
+}
+
+func (p *ObjParse) SetStart(x, y int) {
+	p.pix[p.pixOffset(x, y)] = Start
+}
+
+func (p *ObjParse) SetEnd(x, y int) {
+	p.pix[p.pixOffset(x, y)] = End
+}
+
+func (p *ObjParse) Render() (out string) {
+	for i, v := range p.pix {
+		if (i+1)%p.xLen == 0 {
+			out += "\n"
+		} else {
+			out += p.TransOut(v)
+		}
+	}
+	return
+}
+
+func (p *ObjParse) TransOut(str uint8) (out string) {
+	switch str {
+	case Blank:
+		out = "."
+	case Block:
+		out = "X"
+	case Start:
+		out = "F"
+	case End:
+		out = "T"
+	}
+
+	return
+}
+
+func (p *ObjParse) RenderWorld() (s string) {
+	for y := 0; y < p.yLen; y++ {
+		for x := 0; x < p.xLen; x++ {
 			isBlock := true
 			for _, triangle := range p.Triangles {
 				if triangle.IsInside(Point{
